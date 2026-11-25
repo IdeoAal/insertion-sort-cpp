@@ -1,0 +1,405 @@
+#include <iostream>   // Library untuk input dan output (cin, cout)
+#include <vector>     // Library untuk menggunakan vector sebagai penyimpan data kontak
+#include <string>     // Library untuk menggunakan tipe data string
+#include <limits>     // Library untuk menangani batas input
+#include <cctype>     // Library untuk fungsi pengolahan karakter seperti tolower dan isalpha
+#include <fstream>    // Library untuk membaca dan menulis file
+#include <stdexcept>  // Library untuk menangani exception atau kesalahan
+
+using namespace std;
+
+// =====================================================
+// STRUCT KONTAK
+// =====================================================
+
+// Struct Kontak digunakan untuk menyimpan data kontak.
+// Setiap kontak memiliki dua atribut:
+// - nama: menyimpan nama pemilik kontak.
+// - nomorTelepon: menyimpan nomor telepon pemilik kontak.
+struct Kontak {
+    string nama;
+    string nomorTelepon;
+};
+
+// =====================================================
+// FUNGSI MENGUBAH HURUF MENJADI HURUF KECIL
+// =====================================================
+
+// Fungsi keHurufKecil() digunakan untuk mengubah seluruh
+// karakter dalam sebuah string menjadi huruf kecil.
+//
+// Parameter:
+// - teks: string yang akan diubah.
+//
+// Return:
+// - hasil: string yang seluruh hurufnya sudah menjadi kecil.
+//
+// Fungsi ini digunakan agar proses pengurutan nama
+// tidak membedakan huruf besar dan huruf kecil.
+string keHurufKecil(const string& teks) {
+    string hasil = teks;
+
+    for (size_t i = 0; i < hasil.size(); ++i) {
+        hasil[i] = static_cast<char>(
+            tolower(static_cast<unsigned char>(hasil[i]))
+        );
+    }
+
+    return hasil;
+}
+
+// =====================================================
+// FUNGSI INSERTION SORT
+// =====================================================
+
+// Fungsi insertionSortKontak() digunakan untuk mengurutkan
+// daftar kontak berdasarkan nama secara alfabetis (A-Z).
+//
+// Algoritma yang digunakan adalah Insertion Sort.
+//
+// Parameter:
+// - daftar: vector yang berisi kumpulan data kontak.
+//
+// Cara kerja:
+// 1. Mengambil satu kontak sebagai key.
+// 2. Membandingkan nama key dengan nama kontak sebelumnya.
+// 3. Menggeser kontak yang memiliki nama lebih besar.
+// 4. Menempatkan key pada posisi yang sesuai.
+//
+// Perbandingan dilakukan menggunakan huruf kecil agar
+// pengurutan tidak membedakan kapitalisasi nama.
+void insertionSortKontak(vector<Kontak>& daftar) {
+    int n = daftar.size();
+
+    for (int i = 1; i < n; ++i) {
+        Kontak key = daftar[i];
+        string keyKecil = keHurufKecil(key.nama);
+        int j = i - 1;
+
+        // Menggeser kontak yang namanya lebih besar
+        // daripada nama kontak yang sedang diproses.
+        while (j >= 0 && keHurufKecil(daftar[j].nama) > keyKecil) {
+            daftar[j + 1] = daftar[j];
+            j = j - 1;
+        }
+
+        // Menempatkan kontak pada posisi yang benar.
+        daftar[j + 1] = key;
+    }
+}
+
+// =====================================================
+// FUNGSI MENYIMPAN KONTAK KE FILE
+// =====================================================
+
+// Fungsi simpanKontakKeFile() digunakan untuk menyimpan
+// seluruh data kontak ke dalam file teks.
+//
+// Parameter:
+// - daftar: vector yang berisi data kontak.
+// - namaFile: nama file penyimpanan, secara default
+//   menggunakan file "kontak.txt".
+//
+// Format penyimpanan:
+// nama|nomorTelepon
+//
+// Setiap data kontak disimpan dalam satu baris.
+// Karakter '|' digunakan sebagai pemisah nama dan nomor.
+void simpanKontakKeFile(
+    const vector<Kontak>& daftar,
+    const string& namaFile = "kontak.txt"
+) {
+    // Membuka file untuk penulisan data.
+    ofstream file(namaFile);
+
+    // Memeriksa apakah file berhasil dibuka.
+    if (!file.is_open()) {
+        cout << "Gagal membuka file untuk menyimpan kontak.\n";
+        return;
+    }
+
+    // Menyimpan setiap kontak ke dalam file.
+    for (size_t i = 0; i < daftar.size(); ++i) {
+        file << daftar[i].nama << "|"
+             << daftar[i].nomorTelepon << '\n';
+    }
+}
+
+// =====================================================
+// FUNGSI MEMUAT KONTAK DARI FILE
+// =====================================================
+
+// Fungsi muatKontakDariFile() digunakan untuk membaca
+// data kontak yang sebelumnya sudah disimpan di file.
+//
+// Parameter:
+// - daftar: vector untuk menampung data kontak hasil pembacaan.
+// - namaFile: nama file yang akan dibaca, secara default
+//   menggunakan "kontak.txt".
+//
+// Cara kerja:
+// 1. Membuka file kontak.txt.
+// 2. Menghapus data lama dalam vector.
+// 3. Membaca nama dan nomor telepon dari file.
+// 4. Memasukkan data yang valid ke dalam vector.
+// 5. Mengurutkan kembali kontak menggunakan Insertion Sort.
+//
+// Jika file belum tersedia, fungsi akan langsung berhenti.
+void muatKontakDariFile(
+    vector<Kontak>& daftar,
+    const string& namaFile = "kontak.txt"
+) {
+    // Membuka file untuk membaca data.
+    ifstream file(namaFile);
+
+    // Jika file tidak ditemukan atau gagal dibuka,
+    // program tetap dapat berjalan dengan daftar kosong.
+    if (!file.is_open()) {
+        return;
+    }
+
+    // Mengosongkan vector sebelum memuat data dari file.
+    daftar.clear();
+
+    Kontak k;
+
+    // Membaca nama hingga karakter '|',
+    // kemudian membaca nomor telepon hingga akhir baris.
+    while (getline(file, k.nama, '|') &&
+           getline(file, k.nomorTelepon)) {
+
+        // Hanya memasukkan kontak yang memiliki nama.
+        if (!k.nama.empty()) {
+            daftar.push_back(k);
+        }
+    }
+
+    // Mengurutkan seluruh kontak berdasarkan nama.
+    insertionSortKontak(daftar);
+}
+
+// =====================================================
+// FUNGSI VALIDASI DATA KONTAK
+// =====================================================
+
+// Fungsi validasiKontak() digunakan untuk memeriksa
+// apakah data kontak yang dimasukkan pengguna sudah sesuai.
+//
+// Parameter:
+// - k: objek kontak yang akan diperiksa.
+//
+// Ketentuan validasi:
+// 1. Nama dan nomor telepon tidak boleh kosong.
+// 2. Nama dan nomor telepon tidak boleh mengandung '|',
+//    karena karakter tersebut digunakan sebagai pemisah file.
+// 3. Nomor telepon tidak boleh mengandung huruf.
+//
+// Jika ditemukan kesalahan, fungsi akan melempar
+// exception invalid_argument.
+void validasiKontak(const Kontak& k) {
+
+    // Memeriksa apakah nama atau nomor telepon kosong.
+    if (k.nama.empty() || k.nomorTelepon.empty()) {
+        throw invalid_argument(
+            "Nama dan nomor telepon tidak boleh kosong."
+        );
+    }
+
+    // Memeriksa penggunaan karakter pemisah '|'.
+    if (k.nama.find('|') != string::npos ||
+        k.nomorTelepon.find('|') != string::npos) {
+
+        throw invalid_argument(
+            "Karakter '|' tidak diperbolehkan karena dipakai sebagai pemisah file."
+        );
+    }
+
+    // Memeriksa setiap karakter pada nomor telepon.
+    for (size_t i = 0; i < k.nomorTelepon.size(); ++i) {
+        unsigned char ch =
+            static_cast<unsigned char>(k.nomorTelepon[i]);
+
+        // Jika ditemukan karakter huruf, validasi gagal.
+        if (isalpha(ch)) {
+            throw invalid_argument(
+                "Nomor telepon tidak boleh mengandung huruf."
+            );
+        }
+    }
+}
+
+// =====================================================
+// FUNGSI MENAMBAHKAN KONTAK
+// =====================================================
+
+// Fungsi tambahKontak() digunakan untuk menambahkan
+// kontak baru ke dalam daftar kontak.
+//
+// Parameter:
+// - daftar: vector yang menyimpan seluruh data kontak.
+//
+// Cara kerja:
+// 1. Meminta pengguna memasukkan nama.
+// 2. Meminta pengguna memasukkan nomor telepon.
+// 3. Memvalidasi data menggunakan validasiKontak().
+// 4. Menambahkan data ke dalam vector.
+// 5. Mengurutkan kembali daftar kontak.
+// 6. Menyimpan seluruh kontak ke file.
+//
+// Blok try-catch digunakan untuk menangani kesalahan
+// validasi agar program tidak langsung berhenti.
+void tambahKontak(vector<Kontak>& daftar) {
+    Kontak kontakBaru;
+
+    // Meminta input nama kontak dari pengguna.
+    cout << "Masukkan Nama Kontak: ";
+    getline(cin, kontakBaru.nama);
+
+    // Meminta input nomor telepon dari pengguna.
+    cout << "Masukkan Nomor Telepon: ";
+    getline(cin, kontakBaru.nomorTelepon);
+
+    try {
+        // Memeriksa apakah data kontak sudah memenuhi aturan.
+        validasiKontak(kontakBaru);
+
+        // Menambahkan kontak baru ke dalam vector.
+        daftar.push_back(kontakBaru);
+
+        // Mengurutkan daftar kontak berdasarkan nama.
+        insertionSortKontak(daftar);
+
+        // Menyimpan perubahan daftar kontak ke file.
+        simpanKontakKeFile(daftar);
+
+        // Menampilkan pesan bahwa kontak berhasil ditambahkan.
+        cout << "Kontak tersimpan: "
+             << kontakBaru.nama << " ("
+             << kontakBaru.nomorTelepon << ")\n";
+
+    } catch (const invalid_argument& e) {
+
+        // Menampilkan pesan jika terjadi kesalahan validasi.
+        cout << "[Error Validasi] " << e.what()
+             << " Kontak tidak disimpan.\n";
+    }
+}
+
+// =====================================================
+// FUNGSI MENAMPILKAN DAFTAR KONTAK
+// =====================================================
+
+// Fungsi tampilkanKontak() digunakan untuk menampilkan
+// seluruh data kontak yang tersimpan di dalam vector.
+//
+// Parameter:
+// - daftar: vector yang berisi data kontak.
+//
+// Jika daftar kosong, program akan menampilkan pesan
+// bahwa belum ada kontak yang tersimpan.
+//
+// Jika terdapat data, kontak ditampilkan dalam urutan A-Z.
+void tampilkanKontak(const vector<Kontak>& daftar) {
+
+    // Memeriksa apakah daftar kontak kosong.
+    if (daftar.empty()) {
+        cout << "Daftar kontak masih kosong.\n";
+        return;
+    }
+
+    // Menampilkan judul daftar kontak.
+    cout << "\n=== Daftar Kontak (A - Z) ===\n";
+
+    // Melakukan perulangan untuk menampilkan setiap kontak.
+    for (size_t i = 0; i < daftar.size(); ++i) {
+        cout << i + 1 << ". "
+             << daftar[i].nama << " - "
+             << daftar[i].nomorTelepon << '\n';
+    }
+}
+
+// =====================================================
+// FUNGSI UTAMA PROGRAM (MAIN)
+// =====================================================
+
+// Fungsi main() merupakan titik awal eksekusi program.
+//
+// Alur kerja program:
+// 1. Membuat vector untuk menyimpan daftar kontak.
+// 2. Memuat data kontak dari file kontak.txt.
+// 3. Menampilkan menu utama secara berulang.
+// 4. Menerima pilihan menu dari pengguna.
+// 5. Menjalankan fungsi sesuai pilihan pengguna.
+// 6. Menyimpan kembali data sebelum program berakhir.
+//
+// Program menggunakan perulangan do-while agar menu
+// terus ditampilkan sampai pengguna memilih angka 0.
+int main() {
+
+    // Membuat vector untuk menyimpan seluruh data kontak.
+    vector<Kontak> daftarKontak;
+
+    // Memuat data kontak dari file saat program dijalankan.
+    muatKontakDariFile(daftarKontak);
+
+    int pilihan;
+
+    // Perulangan menu utama program.
+    do {
+        cout << "\n=== Menu Kontak CLI ===\n";
+        cout << "1. Tambah Kontak\n";
+        cout << "2. Lihat Daftar Kontak\n";
+        cout << "0. Keluar\n";
+        cout << "Pilih menu: ";
+
+        // Membaca input pilihan menu.
+        // Jika input bukan angka, program menangani kesalahan.
+        if (!(cin >> pilihan)) {
+
+            // Menghapus status error pada cin.
+            cin.clear();
+
+            // Membersihkan sisa input yang tidak valid.
+            cin.ignore(
+                numeric_limits<streamsize>::max(), '\n'
+            );
+
+            cout << "Input menu harus berupa angka.\n";
+
+            // Mengatur pilihan agar perulangan berlanjut.
+            pilihan = 1;
+            continue;
+        }
+
+        // Membersihkan karakter newline setelah input angka.
+        // Hal ini diperlukan agar getline() berikutnya
+        // dapat membaca input nama dengan benar.
+        cin.ignore(
+            numeric_limits<streamsize>::max(), '\n'
+        );
+
+        // Memeriksa pilihan menu yang dimasukkan pengguna.
+        if (pilihan == 1) {
+
+            // Menjalankan fitur tambah kontak.
+            tambahKontak(daftarKontak);
+
+        } else if (pilihan == 2) {
+
+            // Menjalankan fitur tampilkan daftar kontak.
+            tampilkanKontak(daftarKontak);
+
+        } else if (pilihan != 0) {
+
+            // Menampilkan pesan jika pilihan tidak tersedia.
+            cout << "Pilihan tidak valid.\n";
+        }
+
+    } while (pilihan != 0);
+
+    // Menyimpan seluruh data kontak sebelum program ditutup.
+    simpanKontakKeFile(daftarKontak);
+
+    // Mengakhiri program dengan status berhasil.
+    return 0;
+}
